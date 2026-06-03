@@ -12,6 +12,20 @@ declare module 'discord.js' {
   }
 }
 
+function findProjectRoot(): string {
+  let dir = __dirname;
+  while (dir !== path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) {
+      return dir;
+    }
+    dir = path.dirname(dir);
+  }
+  return __dirname;
+}
+
+const projectRoot = findProjectRoot();
+const distDir = path.join(projectRoot, 'dist');
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -24,8 +38,8 @@ const client = new Client({
 client.commands = new Collection();
 
 async function loadCommands(): Promise<RESTPostAPIApplicationCommandsJSONBody[]> {
-  const commandsPath = path.join(__dirname, 'commands');
-  const commandFiles = fs.readdirSync(commandsPath).filter((f) => f.endsWith('.ts') || f.endsWith('.js'));
+  const commandsPath = path.join(distDir, 'commands');
+  const commandFiles = fs.readdirSync(commandsPath).filter((f) => f.endsWith('.js') && !f.endsWith('.d.ts'));
 
   const commands: RESTPostAPIApplicationCommandsJSONBody[] = [];
 
@@ -49,8 +63,8 @@ async function loadCommands(): Promise<RESTPostAPIApplicationCommandsJSONBody[]>
 }
 
 async function loadEvents(): Promise<void> {
-  const eventsPath = path.join(__dirname, 'events');
-  const eventFiles = fs.readdirSync(eventsPath).filter((f) => f.endsWith('.ts') || f.endsWith('.js'));
+  const eventsPath = path.join(distDir, 'events');
+  const eventFiles = fs.readdirSync(eventsPath).filter((f) => f.endsWith('.js') && !f.endsWith('.d.ts'));
 
   for (const file of eventFiles) {
     const filePath = path.join(eventsPath, file);
