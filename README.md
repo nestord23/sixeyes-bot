@@ -33,10 +33,12 @@ cp .env.example .env
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Run bot locally with hot-reload (tsx watch) |
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm start` | Run compiled bot from `dist/` |
+| `npm run build` | Type-check the code (no compilation needed) |
+| `npm start` | Run bot directly with `tsx` |
 | `npm run lint` | Lint source files |
 | `npm run format` | Format source files with Prettier |
+
+> The bot runs directly from TypeScript source via `tsx`. No `dist/` directory is needed.
 
 ## Project Structure
 
@@ -62,13 +64,11 @@ Create a file in `src/events/` that exports `name`, `once?`, and `execute`. It w
 1. Push the repo to GitHub.
 2. In Render, create a **New + > Background Worker**.
 3. Connect your GitHub repository.
-4. **Root Directory** must be empty (remove any default value like `src/`).
+4. Leave **Root Directory** empty (default).
 5. Set the following:
-   - **Build Command**: `npm install` (the `postinstall` script runs `build` automatically)
+   - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
 6. Add the environment variables (`DISCORD_TOKEN`, `CLIENT_ID`, `GUILD_ID`) in the Render dashboard.
 7. Deploy.
-
-> ⚠️ If **Root Directory** is set to `src/`, Render runs commands from inside `src/` and cannot find `dist/` (which is at the project root). Leave it blank.
 
 The bot will stay alive as a long-running background process.
