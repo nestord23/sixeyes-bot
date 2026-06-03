@@ -62,13 +62,13 @@ Create a file in `src/events/` that exports `name`, `once?`, and `execute`. It w
 1. Push the repo to GitHub.
 2. In Render, create a **New + > Background Worker**.
 3. Connect your GitHub repository.
-4. Leave **Root Directory** empty (default).
+4. **Root Directory** must be empty (remove any default value like `src/`).
 5. Set the following:
-   - **Build Command**: `npm install && npm run build`
+   - **Build Command**: `npm install` (the `postinstall` script runs `build` automatically)
    - **Start Command**: `npm start`
 6. Add the environment variables (`DISCORD_TOKEN`, `CLIENT_ID`, `GUILD_ID`) in the Render dashboard.
 7. Deploy.
 
-> ⚠️ Make sure **Root Directory** is not set to `src/`. The `dist/` folder is generated at the project root after build, so the start command runs from there.
+> ⚠️ If **Root Directory** is set to `src/`, Render runs commands from inside `src/` and cannot find `dist/` (which is at the project root). Leave it blank.
 
 The bot will stay alive as a long-running background process.
