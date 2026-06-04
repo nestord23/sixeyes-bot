@@ -4,10 +4,15 @@ import {
   createAudioPlayer,
   createAudioResource,
   AudioPlayerStatus,
+  VoiceConnectionStatus,
+  StreamType,
+  entersState,
   type VoiceConnection,
 } from '@discordjs/voice';
-import ytdl from 'ytdl-core';
+import https from 'node:https';
+import { Readable } from 'node:stream';
 import { searchVideo } from '../services/youtube.service';
+import { getAudioUrl } from '../services/youtube-stream.service';
 import { logger } from '../utils/logger';
 
 export const data = new SlashCommandBuilder()
@@ -18,8 +23,6 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
-  await interaction.deferReply();
-
   const member = interaction.member as GuildMember | null;
   const channel = member?.voice.channel;
 
@@ -45,6 +48,8 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       guildId: interaction.guildId!,
       adapterCreator: interaction.guild!.voiceAdapterCreator,
     });
+
+    await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
   } catch (error) {
     logger.error('Failed to join voice channel:', error);
     await interaction.editReply({ content: 'Failed to join your voice channel.' });
@@ -66,26 +71,46 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
   await interaction.editReply({ embeds: [embed] });
 
   try {
-    const stream = ytdl(video.url, {
-      filter: 'audioonly',
-      quality: 'lowestaudio',
-      highWaterMark: 1 << 25,
+    const audioUrl = await getAudioUrl(video.url);
+
+    const stream = await new Promise<Readable>((resolve, reject) => {
+      https.get(audioUrl, (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          https.get(res.headers.location, (res2) => resolve(res2));
+          return;
+        }
+        if (res.statusCode !== 200) {
+          reject(new Error(`Audio stream returned status ${res.statusCode}`));
+          return;
+        }
+        resolve(res);
+      }).on('error', reject);
     });
 
-    const resource = createAudioResource(stream);
+    const resource = createAudioResource(stream, {
+      inputType: StreamType.Arbitrary,
+    });
+
     const player = createAudioPlayer();
 
-    player.play(resource);
-    connection.subscribe(player);
+    player.on(AudioPlayerStatus.Playing, () => {
+      logger.info(`Now playing: ${video.title}`);
+    });
 
     player.on(AudioPlayerStatus.Idle, () => {
+      logger.info(`Finished playing: ${video.title}`);
+      stream.destroy();
       connection.destroy();
     });
 
     player.on('error', (error) => {
       logger.error('Audio player error:', error);
+      stream.destroy();
       connection.destroy();
     });
+
+    player.play(resource);
+    connection.subscribe(player);
   } catch (error) {
     logger.error('Failed to play audio:', error);
     connection.destroy();

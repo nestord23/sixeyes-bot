@@ -1,4 +1,4 @@
-import { Events, type Interaction } from 'discord.js';
+import { Events, MessageFlags, type Interaction } from 'discord.js';
 import { logger } from '../utils/logger';
 
 export const name = Events.InteractionCreate;
@@ -10,19 +10,20 @@ export async function execute(interaction: Interaction): Promise<void> {
 
   if (!command) {
     logger.warn(`Command not found: ${interaction.commandName}`);
-    await interaction.reply({ content: 'Command not found.', ephemeral: true });
+    await interaction.reply({ content: 'Command not found.', flags: MessageFlags.Ephemeral });
     return;
   }
+
+  await interaction.deferReply();
 
   try {
     await command.execute(interaction);
   } catch (error) {
     logger.error(`Error executing command ${interaction.commandName}:`, error);
-    const content = 'There was an error executing this command.';
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({ content, ephemeral: true });
-    } else {
-      await interaction.reply({ content, ephemeral: true });
+    try {
+      await interaction.followUp({ content: 'There was an error executing this command.', flags: MessageFlags.Ephemeral });
+    } catch (innerError) {
+      logger.error('Failed to send error response:', innerError);
     }
   }
 }
