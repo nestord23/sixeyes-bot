@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Client, Collection, GatewayIntentBits, type RESTPostAPIApplicationCommandsJSONBody } from 'discord.js';
 import { REST, Routes } from 'discord.js';
 import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { logger } from './utils/logger';
@@ -96,6 +97,17 @@ async function registerCommands(commands: RESTPostAPIApplicationCommandsJSONBody
   }
 }
 
+function startHealthServer(): void {
+  const port = parseInt(process.env.PORT || '10000', 10);
+  const server = http.createServer((_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
+  });
+  server.listen(port, '0.0.0.0', () => {
+    logger.info(`Health server listening on port ${port}`);
+  });
+}
+
 async function main(): Promise<void> {
   const { DISCORD_TOKEN } = process.env;
 
@@ -103,6 +115,8 @@ async function main(): Promise<void> {
     logger.error('Missing DISCORD_TOKEN environment variable');
     process.exit(1);
   }
+
+  startHealthServer();
 
   const commands = await loadCommands();
   await loadEvents();

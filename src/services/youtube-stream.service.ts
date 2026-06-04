@@ -15,12 +15,20 @@ const ytDlpPath = findYtDlpPath();
 
 export async function getAudioUrl(videoUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = cp.spawn(ytDlpPath, [
+    const args: string[] = [
       '-f', 'bestaudio',
       '--get-url',
       '--no-warnings',
-      videoUrl,
-    ]);
+    ];
+
+    const cookiesPath = process.env.YT_COOKIES_PATH || path.join(process.cwd(), 'cookies.txt');
+    if (fs.existsSync(cookiesPath)) {
+      args.push('--cookies', cookiesPath);
+    }
+
+    args.push(videoUrl);
+
+    const child = cp.spawn(ytDlpPath, args);
 
     let output = '';
     let errorOutput = '';
