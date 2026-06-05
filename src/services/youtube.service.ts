@@ -34,41 +34,6 @@ function parseISODuration(iso: string): string {
   return parts.join(':');
 }
 
-export async function searchVideo(query: string): Promise<VideoResult | null> {
-  try {
-    const searchRes = await yt.search.list({
-      part: ['snippet'],
-      q: query,
-      type: ['video'],
-      maxResults: 1,
-    });
-
-    const item = searchRes.data.items?.[0];
-    if (!item?.id?.videoId) return null;
-
-    const videoId = item.id.videoId;
-
-    const videoRes = await yt.videos.list({
-      part: ['contentDetails', 'snippet'],
-      id: [videoId],
-    });
-
-    const video = videoRes.data.items?.[0];
-    if (!video) return null;
-
-    return {
-      title: video.snippet?.title ?? 'Unknown',
-      url: `https://youtu.be/${videoId}`,
-      thumbnail: video.snippet?.thumbnails?.high?.url ?? video.snippet?.thumbnails?.default?.url ?? '',
-      channel: video.snippet?.channelTitle ?? 'Unknown',
-      duration: parseISODuration(video.contentDetails?.duration ?? 'PT0S'),
-    };
-  } catch (error) {
-    logger.error('YouTube searchVideo error:', error);
-    return null;
-  }
-}
-
 export async function searchMultiple(query: string, limit: number = 5): Promise<VideoResult[]> {
   try {
     const searchRes = await yt.search.list({

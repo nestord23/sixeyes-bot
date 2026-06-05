@@ -1,9 +1,9 @@
-import { SlashCommandBuilder, EmbedBuilder, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import { searchMultiple } from '../services/youtube.service';
 import { logger } from '../utils/logger';
 
 export const data = new SlashCommandBuilder()
-  .setName('search')
+  .setName('tube')
   .setDescription('Search for videos on YouTube')
   .addStringOption((option) =>
     option.setName('query').setDescription('Search query').setRequired(true),
@@ -20,20 +20,20 @@ export async function execute(interaction: ChatInputCommandInteraction): Promise
       return;
     }
 
-    const description = results
-      .map(
-        (video, index) =>
-          `**${index + 1}.** [${video.title}](${video.url})\n└ ${video.channel} • ${video.duration}`,
-      )
-      .join('\n\n');
+    const embeds = results.map((video, index) =>
+      new EmbedBuilder()
+        .setColor(0xFF0000)
+        .setTitle(`${index + 1}. ${video.title}`)
+        .setURL(video.url)
+        .setThumbnail(video.thumbnail)
+        .addFields(
+          { name: 'Channel', value: `🔴 ${video.channel}`, inline: true },
+          { name: 'Duration', value: `⏱ ${video.duration}`, inline: true },
+        )
+        .setFooter({ text: `SixEyes Bot • YouTube` }),
+    );
 
-    const embed = new EmbedBuilder()
-      .setColor(0xFF0000)
-      .setTitle(`Search results for "${query}"`)
-      .setDescription(description)
-      .setFooter({ text: 'SixEyes Bot • YouTube' });
-
-    await interaction.editReply({ embeds: [embed] });
+    await interaction.editReply({ embeds });
   } catch (error) {
     logger.error('Search command error:', error);
     await interaction.editReply({ content: 'An error occurred while searching YouTube.' });
