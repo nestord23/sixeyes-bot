@@ -39,7 +39,7 @@ export async function searchVehicleImage(
       }>;
     };
 
-    logger.debug(`Unsplash results count: ${data.results?.length ?? 0}`);
+      logger.debug(`Unsplash results count: ${data.results?.length ?? 0}`);
 
     if (!data.results || data.results.length === 0) {
       logger.warn('No Unsplash images found');
@@ -49,6 +49,42 @@ export async function searchVehicleImage(
     return data.results[0].urls.regular;
   } catch (error) {
     logger.error('Unsplash searchVehicleImage error:', error);
+    return null;
+  }
+}
+
+export async function searchImage(query: string): Promise<string | null> {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+
+  if (!accessKey) {
+    logger.warn('Missing UNSPLASH_ACCESS_KEY environment variable');
+    return null;
+  }
+
+  try {
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`;
+
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Client-ID ${accessKey}`,
+        'Accept-Version': 'v1',
+      },
+    });
+
+    if (!res.ok) {
+      logger.error(`Unsplash request failed: ${res.status}`);
+      return null;
+    }
+
+    const data = (await res.json()) as {
+      results: Array<{ urls: { regular: string } }>;
+    };
+
+    if (!data.results?.length) return null;
+
+    return data.results[0].urls.regular;
+  } catch (error) {
+    logger.error('Unsplash searchImage error:', error);
     return null;
   }
 }
