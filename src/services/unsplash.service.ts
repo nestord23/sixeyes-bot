@@ -18,7 +18,6 @@ export async function searchVehicleImage(
     const query = encodeURIComponent(`${year} ${make} ${model} ${typeKeyword}`);
 
     const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=1&orientation=landscape`;
-    logger.debug(`Unsplash URL: ${url}`);
 
     const res = await fetch(url, {
       headers: {
@@ -29,7 +28,6 @@ export async function searchVehicleImage(
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      logger.error(`Unsplash request failed: ${res.status} ${res.statusText} — ${body}`);
       return null;
     }
 
@@ -48,7 +46,6 @@ export async function searchVehicleImage(
 
     return data.results[0].urls.regular;
   } catch (error) {
-    logger.error('Unsplash searchVehicleImage error:', error);
     return null;
   }
 }
@@ -84,7 +81,6 @@ export async function searchImage(query: string): Promise<string | null> {
 
     return data.results[0].urls.regular;
   } catch (error) {
-    logger.error('Unsplash searchImage error:', error);
     return null;
   }
 }
